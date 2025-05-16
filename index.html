@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サム・アルトマン氏講演理解度クイズ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #f9fafb; /* Tailwind gray-50 */
+            border-radius: 0.75rem; /* Tailwind rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Tailwind shadow-lg */
+        }
+        .question-text {
+            font-size: 1.25rem; /* Tailwind text-xl */
+            font-weight: 700; /* Tailwind font-bold */
+            margin-bottom: 1.5rem; /* Tailwind mb-6 */
+            color: #1f2937; /* Tailwind gray-800 */
+        }
+        .answer-choice {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 0.75rem; /* Tailwind mb-3 */
+            border: 1px solid #d1d5db; /* Tailwind border-gray-300 */
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            background-color: #ffffff; /* Tailwind bg-white */
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .answer-choice:hover {
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        .answer-choice.selected {
+            background-color: #3b82f6; /* Tailwind blue-500 */
+            color: #ffffff; /* Tailwind text-white */
+            border-color: #2563eb; /* Tailwind blue-600 */
+        }
+        .answer-choice.correct {
+            background-color: #10b981; /* Tailwind green-500 */
+            color: #ffffff; /* Tailwind text-white */
+            border-color: #059669; /* Tailwind green-600 */
+        }
+        .answer-choice.incorrect {
+            background-color: #ef4444; /* Tailwind red-500 */
+            color: #ffffff; /* Tailwind text-white */
+            border-color: #dc2626; /* Tailwind red-600 */
+        }
+        .explanation {
+            margin-top: 1.5rem; /* Tailwind mt-6 */
+            padding: 1rem;
+            background-color: #e5e7eb; /* Tailwind gray-200 */
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            color: #374151; /* Tailwind gray-700 */
+        }
+        .explanation strong {
+            color: #1f2937; /* Tailwind gray-800 */
+        }
+        .nav-button {
+            padding: 0.75rem 1.5rem; /* Tailwind py-3 px-6 */
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            font-weight: 700; /* Tailwind font-bold */
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .score-container {
+            text-align: center;
+            padding: 2rem;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e5e7eb; /* Tailwind gray-200 */
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            margin-bottom: 1.5rem; /* Tailwind mb-6 */
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 1.25rem; /* Tailwind h-5 */
+            background-color: #3b82f6; /* Tailwind blue-500 */
+            width: 0%;
+            text-align: center;
+            line-height: 1.25rem; /* Tailwind leading-5 */
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+    <div class="quiz-container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">サム・アルトマン氏講演 理解度クイズ</h1>
+
+        <div id="progress-bar-container" class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+
+        <div id="quiz-area">
+            <p id="question-number" class="text-sm text-gray-500 mb-2"></p>
+            <p id="question" class="question-text"></p>
+            <div id="choices" class="space-y-3"></div>
+        </div>
+
+        <div id="explanation-area" class="explanation" style="display: none;">
+            <p id="explanation-text"></p>
+        </div>
+
+        <div id="result-area" class="text-center mt-6" style="display: none;">
+            <p id="result-text" class="text-xl font-semibold"></p>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+            <button id="prev-button" class="nav-button bg-gray-300 hover:bg-gray-400 text-gray-800" disabled>前の問題へ</button>
+            <span id="feedback" class="text-lg font-medium"></span>
+            <button id="next-button" class="nav-button bg-blue-500 hover:bg-blue-600 text-white">次の問題へ</button>
+        </div>
+
+        <div id="score-area" class="score-container" style="display: none;">
+            <h2 class="text-2xl font-bold mb-4 text-green-600">クイズ終了！</h2>
+            <p id="score" class="text-3xl mb-6"></p>
+            <button id="restart-button" class="nav-button bg-green-500 hover:bg-green-600 text-white">もう一度挑戦する</button>
+        </div>
+    </div>
+
+    <script>
+        // クイズデータ
+        const quizData = [
+            {
+                question: "1. OpenAIが最初にオフィスを構えたのはいつ頃だとアルトマン氏は述べていますか？",
+                choices: ["a) 2014年", "b) 2016年", "c) 2018年"],
+                correctAnswer: "b) 2016年",
+                explanation: "アルトマン氏は講演の冒頭で、「This was our first office. He started in 2016. (00:20)」と述べており、OpenAIが最初のオフィスを構えたのが2016年であることを明確にしています。"
+            },
+            {
+                question: "2. 2016年当時、OpenAIはどのような状態だったとアルトマン氏は説明していますか？",
+                choices: ["a) すでに具体的な製品開発計画を持つ企業だった", "b) 強固な信念と方向性はあったが、具体的な行動計画はない研究ラボだった", "c) 大規模言語モデル（LLM）の開発に成功し、その応用を模索していた"],
+                correctAnswer: "b) 強固な信念と方向性はあったが、具体的な行動計画はない研究ラボだった",
+                explanation: "アルトマン氏は、「it's almost impossible to sort of overstate how much we were like a research lab with no with with a very strong belief and direction and conviction but no real kind of like action plan. (01:06-01:34)」と述べています。当時は企業や製品という考えは想像もできず、LLMというアイデアもまだ遠いものだったと語っています。"
+            },
+            {
+                question: "3. OpenAIが最初に着手した具体的な試みは何でしたか？",
+                choices: ["a) チャットボットの開発", "b) 画像生成モデルの開発", "c) ビデオゲームをプレイすること"],
+                correctAnswer: "c) ビデオゲームをプレイすること",
+                explanation: "アルトマン氏は、「Trying to play video games. (01:34)」と述べ、初期のOpenAIがビデオゲームをプレイするAIを開発しようとしていたことに言及しています。これは、システムが機能しているかを確認するための一つの手段でした。"
+            },
+            {
+                question: "4. OpenAIにとって最初の「消費者向け製品」と呼べるものは何でしたか？",
+                choices: ["a) ChatGPT", "b) DALL-E", "c) API"],
+                correctAnswer: "b) DALL-E",
+                explanation: "インタビュアーがChatGPTを最初の消費者向け製品として言及した際、アルトマン氏は「The the uh the first consumer product was not Chacht. That's right. It was Dolly. (01:59)」と訂正しています。ただし、その前に「the first product was uh the API. (02:18)」とも述べており、厳密にはAPIが最初の製品ですが、「消費者向け」という観点ではDALL-Eが先だったと認識されています。"
+            },
+            {
+                question: "5. GPT-3 APIを公開した当初、世間の反応はどうでしたか？",
+                choices: ["a) 世界中から大きな注目を集めた", "b) シリコンバレーの一部は注目したが、世界のほとんどは関心を示さなかった", "c) すぐに多くの企業が実用的なビジネスを構築し始めた"],
+                correctAnswer: "b) シリコンバレーの一部は注目したが、世界のほとんどは関心を示さなかった",
+                explanation: "アルトマン氏は、「we put out GPT3 in the API and the world didn't care, but sort of Silicon Valley did. (04:03-04:24)」と述べています。一部のスタートアップ創業者からは注目されたものの、広範な注目は得られなかったと語っています。"
+            },
+            {
+                question: "6. ChatGPT開発のきっかけとなった、GPT-3 APIの「キラーユース」は何でしたか？",
+                choices: ["a) コピーライティングサービス", "b) プレイグラウンドでの対話", "c) 科学論文の執筆補助"],
+                correctAnswer: "b) プレイグラウンドでの対話",
+                explanation: "アルトマン氏は、「one thing we did notice which eventually led to ChatGpt is even though people couldn't build a lot of great businesses with the GPT3 API, people love to talk to it in the playground. (04:46-05:07)」と述べています。当時はチャット性能が悪かったにも関わらず、多くの人がプレイグラウンドでGPT-3と対話することを楽しんでいたことが、ChatGPT開発のヒントになったと語っています。"
+            },
+            {
+                question: "7. アルトマン氏が考える、大企業が製品開発の速度を上げるために避けるべきことは何ですか？",
+                choices: ["a) チームの規模を小さく保つこと", "b) 従業員を常に忙しくさせること", "c) 企業規模が大きくなっても、手掛ける製品の数を増やさないこと"],
+                correctAnswer: "c) 企業規模が大きくなっても、手掛ける製品の数を増やさないこと",
+                explanation: "アルトマン氏は、「I I I think a mistake that a lot of companies make is they get big and they don't do any they don't do more things. So they just like get bigger because you're supposed to get bigger and they still ship the same amount of product. (06:23-06:45)」と述べています。企業が大きくなっても新しいことに挑戦せず、同じ量の製品しか出さないと、停滞が生じると指摘しています。"
+            },
+            {
+                question: "8. OpenAIが目指す「コアAIサブスクリプション」とは、主にどのようなものですか？",
+                choices: ["a) 特定の業界に特化したAIソリューション", "b) 人々が生活の様々な場面で利用する、パーソナライズされたAIサービス", "c) 企業向けの高度なAI開発プラットフォーム"],
+                correctAnswer: "b) 人々が生活の様々な場面で利用する、パーソナライズされたAIサービス",
+                explanation: "アルトマン氏は、「we want to build we want to be people's like core AI subscription and way to use that thing. (09:19)」と述べ、人々が様々なサービスやデバイスを通じて生涯にわたって利用する、中心的なAIサービスを目指していると語っています。"
+            },
+            {
+                question: "9. OpenAIの将来のプラットフォームについて、アルトマン氏はどのように考えていますか？",
+                choices: ["a) 現状のAPIをさらに強化していく", "b) まだ具体的な形は見えていないが、いずれ構築する", "c) 他社との競争を避けるため、プラットフォーム化は考えていない"],
+                correctAnswer: "b) まだ具体的な形は見えていないが、いずれ構築する",
+                explanation: "アルトマン氏は、「we have not yet figured out exactly I think what the sort of API or SDK or whatever you want to call it is to like really be our platform. But we will. It may take us a few tries, but we will. (09:44-10:07)」と述べており、プラットフォームの具体的な形はまだ模索中であるものの、必ず実現するという意志を示しています。"
+            },
+            {
+                question: "10. アルトマン氏が信じる、成功する戦略の立て方はどのようなものですか？",
+                choices: ["a) 壮大な最終目標から逆算して計画を立てる", "b) 目前の課題に一つ一つ取り組み、状況に応じて戦術を調整する", "c) 競合他社の戦略を徹底的に分析し、それを上回る計画を立てる"],
+                correctAnswer: "b) 目前の課題に一つ一つ取り組み、状況に応じて戦術を調整する",
+                explanation: "アルトマン氏は、「I am a big believer that you can kind of like do the things in front of you, but if you like try to work backwards from like kind of we have this crazy complex thing. That doesn't usually work as well. (10:51-11:12)」と述べています。壮大な計画を逆算するよりも、目の前のことに取り組み、世界の変化に合わせて機敏に戦術を変えることを重視しています。"
+            },
+            {
+                question: "11. 大企業がAIネイティブな組織への変革に苦労する理由として、アルトマン氏が指摘していることは何ですか？",
+                choices: ["a) 技術的な専門知識の不足", "b) 既存のやり方や組織体制に固執してしまうこと", "c) AI導入への資金不足"],
+                correctAnswer: "b) 既存のやり方や組織体制に固執してしまうこと",
+                explanation: "アルトマン氏は、「The thing that they're getting wrong is the same thing they always get wrong, which is like people get incredibly stuck in their ways. Organizations get incredibly stuck in their ways. (13:07-13:37)」と述べています。変化が激しい時代において、従来のやり方や年に一度しか見直されないような情報セキュリティ規定などが、大企業の変革を妨げていると指摘しています。"
+            },
+            {
+                question: "12. 若者がChatGPTを利用する際に見られる、アルトマン氏が驚くような特徴的な使い方とは何ですか？",
+                choices: ["a) 単純な情報検索ツールとしての利用", "b) オペレーティングシステムのように複雑に設定し、生活の意思決定にも活用すること", "c) 特定の専門分野の学習補助としての利用"],
+                correctAnswer: "b) オペレーティングシステムのように複雑に設定し、生活の意思決定にも活用すること",
+                explanation: "アルトマン氏は、「They really do use it like an operating system. ... they don't really make life decisions without asking like chbt what they should do. (14:52-15:28)」と述べています。若者の中には、ChatGPTをファイルと連携させたり、複雑なプロンプトを記憶して使いこなし、人生の重要な決定について相談するほど深く活用している層がいると語っています。"
+            },
+            {
+                question: "13. OpenAI社内では、ChatGPTは主にどのように活用されていますか？",
+                choices: ["a) 顧客サポートの自動化", "b) 大量のコード記述", "c) マーケティング戦略の立案"],
+                correctAnswer: "b) 大量のコード記述",
+                explanation: "「How do you use it inside of OpenAI?」という質問に対し、アルトマン氏は「I mean it writes a lot of our code. (15:49-16:24)」と答えています。具体的な割合は不明としつつも、重要な部分のコード作成にChatGPTが貢献していると述べています。"
+            },
+            {
+                question: "14. 将来的に、OpenAIのAPIとChatGPTのような消費者向け製品の関係はどうなるとアルトマン氏は考えていますか？",
+                choices: ["a) APIは開発者向け、ChatGPTは一般消費者向けとして完全に分離される", "b) 全てが一つに統合され、OpenAIアカウントで他のサービスにログインしたり、他のサービスがChatGPTのUIを利用できるようになる", "c) APIの提供は終了し、ChatGPTのような製品に注力する"],
+                correctAnswer: "b) 全てが一つに統合され、OpenAIアカウントで他のサービスにログインしたり、他のサービスがChatGPTのUIを利用できるようになる",
+                explanation: "アルトマン氏は、「I really hope that all of this merges into one thing. like you should be able to sign in with OpenAI to other services. Other services should have an incredible SDK to like take over the chat GBT um UI at some point. (16:50-17:21)」と述べています。パーソナライズされたAIが様々な場所で利用できるよう、APIと製品が統合されていく未来を望んでいます。"
+            },
+            {
+                question: "15. AIが物理世界のセンサーデータを活用することについて、アルトマン氏はどのように考えていますか？",
+                choices: ["a) 現状のモデルではまだ難しい課題である", "b) すでに多くの人々がAPIを通じてセンサーデータを活用しており、最新モデルはうまく扱える", "c) プライバシーの問題が大きいため、積極的に取り組むべきではない"],
+                correctAnswer: "b) すでに多くの人々がAPIを通じてセンサーデータを活用しており、最新モデルはうまく扱える",
+                explanation: "アルトマン氏は、「People do that a lot. ... I'd say that the latest models seem to do a good job with this and they used to not. (19:08-19:27)」と述べています。センサーデータの活用はすでに行われており、以前のモデルは苦手としていたものの、最新モデルではうまく機能するようになっていると語っています。"
+            },
+            {
+                question: "16. 音声インターフェースの重要性について、アルトマン氏はどのように評価していますか？",
+                choices: ["a) テキストインターフェースほど重要ではない", "b) 非常に重要だが、まだ満足のいく製品は作れていない", "c) すでに完成度の高い音声製品を提供できている"],
+                correctAnswer: "b) 非常に重要だが、まだ満足のいく製品は作れていない",
+                explanation: "アルトマン氏は、「I think voice is extremely important. Honestly, we just we have not made a good enough voice product yet. (19:47-20:09)」と述べています。音声は極めて重要であるものの、OpenAIはまだ十分な品質の音声製品を開発できていないと認めています。将来的には、人間レベルの音声対話が新しいデバイスクラスを生み出す可能性も示唆しています。"
+            },
+            {
+                question: "17. コーディング（プログラミング）は、OpenAIの将来にとってどのような位置づけですか？",
+                choices: ["a) 数ある応用分野の一つに過ぎない", "b) OpenAIの将来にとって中心的な役割を担う", "c) 主に外部のAPI利用者に委ねる分野である"],
+                correctAnswer: "b) OpenAIの将来にとって中心的な役割を担う",
+                explanation: "アルトマン氏は、「That one's more central to the future of open AI. ... writing code I think will be very central to how you like actuate the world and call a bunch of APIs or whatever. (20:48-21:31)」と述べています。コーディングは、モデルが世界に働きかけ、様々なAPIを呼び出すための中心的な手段になると考えており、ChatGPTも優れたコード記述能力を持つべきだと語っています。"
+            },
+            {
+                question: "18. AIモデルの進化における「過小評価されている要素」について、アルトマン氏が特に強調したことは何ですか？",
+                choices: ["a) より多くのデータ", "b) より大きなデータセンター", "c) 大規模なアルゴリズムのブレークスルー"],
+                correctAnswer: "c) 大規模なアルゴリズムのブレークスルー",
+                explanation: "「what's like an underrated ingredient」という質問に対し、アルトマン氏はデータや計算資源も重要としつつ、「obviously like the highest leverage thing is still big algorithmic breakthroughs and I think there still probably are some 10 x's or 100 x's left not very many but even one or two is a big deal. (22:06-22:41)」と述べています。アルゴリズムにおける大きな進歩が、依然として最も影響力の大きい要素であると強調しています。"
+            },
+            {
+                question: "19. OpenAIが優れた研究ラボを運営するために参考にしている原則は、どこから得たものですか？",
+                choices: ["a) 現代の成功しているテクノロジー企業", "b) 過去の成功した研究ラボの事例", "c) OpenAI独自の試行錯誤から編み出したもの"],
+                correctAnswer: "b) 過去の成功した研究ラボの事例",
+                explanation: "アルトマン氏は、「when we started OpenAI, we spent a lot of time trying to understand uh what a well-run research lab looks like. And you had to go really far back in the past. ... We shamelessly copied from other good research labs in history. (23:10-24:30)」と述べています。OpenAIの研究ラボ運営の原則は、歴史上の優れた研究ラボから学んだものであり、独自に発明したものではないと語っています。"
+            },
+            {
+                question: "20. アルトマン氏が予測する、2027年頃に起こりうると考えるAIに関する大きな変化は何ですか？",
+                choices: ["a) AIが人間を超える知能を獲得する（シンギュラリティ）", "b) AIによる大規模な科学的発見が相次ぐ", "c) ロボットが単なる珍しい存在から、深刻な経済的価値創造者へと変化する"],
+                correctAnswer: "c) ロボットが単なる珍しい存在から、深刻な経済的価値創造者へと変化する",
+                explanation: "アルトマン氏は、2025年はエージェントが仕事をする年、翌年（2026年）はAIが新しいものを発見する年と予測した後、「And then 27 I I would guess is the year where like that all moves from the sort of intellectual realm to the physical world and robots go from a curiosity to like a serious economic creator of value. (28:06-29:07)」と述べています。2027年には、AIの進化が物理世界に及び、ロボットが経済的に重要な役割を担うようになると予測しています。"
+            }
+        ];
+
+        // 現在の質問番号、スコア、ユーザーの回答を管理する変数
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = new Array(quizData.length).fill(null); // 各質問に対するユーザーの回答を保存
+        let answeredCurrentQuestion = false; // 現在の質問に回答済みか
+
+        // HTML要素を取得
+        const questionNumberEl = document.getElementById('question-number');
+        const questionEl = document.getElementById('question');
+        const choicesEl = document.getElementById('choices');
+        const explanationAreaEl = document.getElementById('explanation-area');
+        const explanationTextEl = document.getElementById('explanation-text');
+        const resultAreaEl = document.getElementById('result-area');
+        const resultTextEl = document.getElementById('result-text');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const scoreAreaEl = document.getElementById('score-area');
+        const scoreEl = document.getElementById('score');
+        const restartButton = document.getElementById('restart-button');
+        const quizAreaEl = document.getElementById('quiz-area');
+        const feedbackEl = document.getElementById('feedback');
+        const progressBarEl = document.getElementById('progress-bar');
+
+
+        // 質問と選択肢を表示する関数
+        function displayQuestion() {
+            answeredCurrentQuestion = false; // 新しい質問なので未回答状態に
+            feedbackEl.textContent = ''; // フィードバックをクリア
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.textContent = `問題 ${currentQuestionIndex + 1} / ${quizData.length}`;
+            questionEl.textContent = currentQuestion.question;
+            choicesEl.innerHTML = ''; // 前の選択肢をクリア
+
+            // プログレスバーの更新
+            const progressPercentage = ((currentQuestionIndex + 1) / quizData.length) * 100;
+            progressBarEl.style.width = `${progressPercentage}%`;
+            progressBarEl.textContent = `${Math.round(progressPercentage)}%`;
+
+
+            currentQuestion.choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice;
+                button.classList.add('answer-choice');
+                button.addEventListener('click', () => selectAnswer(button, choice));
+                choicesEl.appendChild(button);
+            });
+
+            explanationAreaEl.style.display = 'none';
+            resultAreaEl.style.display = 'none';
+            nextButton.textContent = '回答を確認';
+            nextButton.disabled = true; // 回答を選択するまで「回答を確認」ボタンを無効化
+            prevButton.disabled = currentQuestionIndex === 0;
+
+            // ユーザーが既に回答している場合はその回答を復元
+            if (userAnswers[currentQuestionIndex] !== null) {
+                const buttons = choicesEl.getElementsByTagName('button');
+                for (let btn of buttons) {
+                    if (btn.textContent === userAnswers[currentQuestionIndex].selectedChoice) {
+                        btn.classList.add('selected');
+                        break;
+                    }
+                }
+                // 回答済みの場合、すぐに解説表示モードに移行可能
+                checkAnswer(false); // アニメーションなしで解説表示
+            }
+        }
+
+        // 回答を選択したときの処理
+        function selectAnswer(selectedButton, choice) {
+            if (answeredCurrentQuestion) return; // 既に回答済みの場合は何もしない
+
+            // 他の選択肢の選択状態を解除
+            const buttons = choicesEl.getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.classList.remove('selected');
+            }
+            // 選択したボタンを強調
+            selectedButton.classList.add('selected');
+            nextButton.disabled = false; // 回答が選択されたのでボタンを有効化
+
+            // ユーザーの選択を保存（一時的、確認後に確定）
+            userAnswers[currentQuestionIndex] = { selectedChoice: choice, isCorrect: null };
+        }
+
+        // 回答をチェックする関数
+        function checkAnswer(showFeedbackAnimation = true) {
+            if (userAnswers[currentQuestionIndex] === null || userAnswers[currentQuestionIndex].selectedChoice === undefined) {
+                 // ユーザーがまだ選択していない場合（直接「次の問題へ」を押した場合など）
+                feedbackEl.textContent = '答えを選んでください。';
+                feedbackEl.className = 'text-red-500 font-medium';
+                return false; // チェック処理を中断
+            }
+
+            answeredCurrentQuestion = true;
+            const currentQuestion = quizData[currentQuestionIndex];
+            const userAnswer = userAnswers[currentQuestionIndex].selectedChoice;
+            const isCorrect = userAnswer === currentQuestion.correctAnswer;
+
+            userAnswers[currentQuestionIndex].isCorrect = isCorrect; // 正誤情報を保存
+
+            const buttons = choicesEl.getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.disabled = true; // 回答後は選択肢を無効化
+                if (btn.textContent === currentQuestion.correctAnswer) {
+                    btn.classList.add('correct');
+                } else if (btn.textContent === userAnswer && !isCorrect) {
+                    btn.classList.add('incorrect');
+                }
+            }
+
+            explanationTextEl.innerHTML = `<strong>正解：</strong>${currentQuestion.correctAnswer}<br><br><strong>解説：</strong>${currentQuestion.explanation}`;
+            explanationAreaEl.style.display = 'block';
+
+            if (showFeedbackAnimation) {
+                if (isCorrect) {
+                    feedbackEl.textContent = '正解！';
+                    feedbackEl.className = 'text-green-500 font-bold';
+                    // スコアは最後の問題の後にまとめて計算するので、ここでは加算しない
+                } else {
+                    feedbackEl.textContent = '不正解...';
+                    feedbackEl.className = 'text-red-500 font-bold';
+                }
+            }
+
+
+            nextButton.textContent = '次の問題へ';
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextButton.textContent = '結果を見る';
+            }
+            nextButton.disabled = false; // 次へ進めるように有効化
+            return true; // チェック処理完了
+        }
+
+
+        // 「次の問題へ」ボタンの処理
+        nextButton.addEventListener('click', () => {
+            if (!answeredCurrentQuestion) { // まだ回答を確認していない場合
+                if (!checkAnswer()) { // checkAnswerがfalseを返したら（選択なしなど）、処理を中断
+                    return;
+                }
+            } else { // 回答確認済みの場合（次の問題へ進む）
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizData.length) {
+                    displayQuestion();
+                } else {
+                    displayScore();
+                }
+            }
+        });
+
+        // 「前の問題へ」ボタンの処理
+        prevButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        });
+
+        // スコアを表示する関数
+        function displayScore() {
+            quizAreaEl.style.display = 'none';
+            explanationAreaEl.style.display = 'none';
+            resultAreaEl.style.display = 'none';
+            prevButton.style.display = 'none';
+            nextButton.style.display = 'none';
+            scoreAreaEl.style.display = 'block';
+            feedbackEl.style.display = 'none';
+            document.getElementById('progress-bar-container').style.display = 'none';
+
+
+            // スコアを計算
+            score = 0;
+            userAnswers.forEach(answer => {
+                if (answer && answer.isCorrect) {
+                    score++;
+                }
+            });
+
+            scoreEl.textContent = `あなたのスコア: ${score} / ${quizData.length}`;
+        }
+
+        // 「もう一度挑戦する」ボタンの処理
+        restartButton.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers.fill(null);
+            quizAreaEl.style.display = 'block';
+            scoreAreaEl.style.display = 'none';
+            prevButton.style.display = 'inline-block'; // ボタンを再表示
+            nextButton.style.display = 'inline-block'; // ボタンを再表示
+            feedbackEl.style.display = 'inline-block'; // フィードバックエリアを再表示
+            document.getElementById('progress-bar-container').style.display = 'block'; // プログレスバーを再表示
+            progressBarEl.style.width = `0%`; // プログレスバーをリセット
+            progressBarEl.textContent = `0%`;
+
+            displayQuestion();
+        });
+
+        // 初期表示
+        displayQuestion();
+    </script>
+
+</body>
+</html>
